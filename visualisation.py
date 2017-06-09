@@ -1,10 +1,14 @@
 from math import pi, cos, sin, sqrt
-from itertools import combinations
 
 import cairo
 
 # A4
-HEIGHT, WIDTH = 8.3 * 72, 11.7 * 72
+# HEIGHT, WIDTH = 8.3 * 72, 11.7 * 72
+
+# A3
+HEIGHT, WIDTH = 11.7 * 72, 2 * 8.3 * 72
+
+mm = 72 / 25.4  # dpi / (number of millimeters in one inch)
 
 
 class Point:
@@ -49,7 +53,8 @@ class Point:
 class HocusContext(cairo.Context):
 
     # distance between two edges of a connecting link in the 2D projection
-    width = 10
+    # measured with Monsters, Inc. ruler.
+    width = mm
 
     # distance from the middle of a cube to one of its vertices in the 2D
     # projection
@@ -57,16 +62,17 @@ class HocusContext(cairo.Context):
 
     def draw_point(self, p):
         """Draw cross at p"""
-        self.set_line_width(1)
-        self.set_source_rgba(0, 0, 0, 1)
-        self.move_to(p.x + 10, p.y)
-        self.line_to(p.x - 10, p.y)
+        length = 3
+        self.set_line_width(0.1)
+        self.set_source_rgba(0, 0, 1, 1)
+        self.move_to(p.x + length, p.y)
+        self.line_to(p.x - length, p.y)
         self.stroke()
-        self.move_to(p.x, p.y + 10)
-        self.line_to(p.x, p.y - 10)
+        self.move_to(p.x, p.y + length)
+        self.line_to(p.x, p.y - length)
         self.stroke()
 
-    def draw_line(self, p, q, line_width=2, line_cap=cairo.LINE_CAP_ROUND):
+    def draw_line(self, p, q, line_width=0.8, line_cap=cairo.LINE_CAP_ROUND):
         """Draw line between p and q"""
         self.set_line_width(line_width)
         self.set_line_cap(line_cap)
@@ -74,21 +80,36 @@ class HocusContext(cairo.Context):
         self.line_to(*q)
         self.stroke()
 
-    def draw_cube(self, middle, edges):
+    def draw_cube(self, middle, edges, explain=False):
+        """Draw a cube and some adjacent lines.
+
+        (Lines which cannot be drawn without knowledge of edges.)
+
+        Args:
+            middle: Point -- center of the 2D projection of the cube
+            edges: Iterable -- list of edges adjacent to the cube. Numbered
+                from top clockwise 1..6.
+            explain: bool -- Should different parts of the cube be drawn in
+                different colours?
+        """
 
         edges = set(e - 1 for e in edges)
         top = middle - Point(0, self.edge)
 
-        # No comment would help you. Draw it.
-        for i in range(3):
-            if i * 2 not in edges and ((i + 1) * 2) % 6 not in edges:
+        # No comment would help you. Draw it (with explain=True).
+        if explain:
+            self.set_source_rgb(1, 0, 0)
+        for i in [0, 2, 4]:
+            if i not in edges and (i + 2) % 6 not in edges:
                 self.draw_line(
                     middle,
-                    top.rotated((1 + 2 * i) * pi / 3, middle)
+                    top.rotated((1 + i) * pi / 3, middle)
                 )
-            if i * 2 in edges:
-                self.draw_line(middle, top.rotated(2 * i * pi / 3, middle))
+            if i in edges:
+                self.draw_line(middle, top.rotated(i * pi / 3, middle))
 
+        if explain:
+            self.set_source_rgb(0.6, 0.6, 0)
         for i in range(6):
             if not (i in edges or (i + 1) % 6 in edges):
                 self.draw_line(
@@ -96,38 +117,106 @@ class HocusContext(cairo.Context):
                     top.rotated((i + 1) * pi / 3, middle)
                 )
 
-    def draw_link(self, p, q):
+        if explain:
+            self.set_source_rgb(0.3, 0.3, 0.5)
+        for i in range(6):
+            if i in edges:
+                vert = top.rotated(i * pi / 3, middle)
+
+                for sgn in [-1, 1]:
+                    if i % 2 == 0 or (i - sgn) % 6 not in edges:
+                        q = middle.rotated(sgn * pi / 3, vert)
+                        self.draw_line(q, q + vert - middle)
+        if explain:
+            self.set_source_rgb(0, 0, 0)
+
+    def draw_link(self, a, b):
         """Draw connection between two cubes"""
+
+        p = a + (b - a) * (self.edge / b.dist(a))
+        q = b + (a - b) * (self.edge / b.dist(a))
+
         self.draw_line(p, q)
 
-        # outer lines are shorter so that they don't cross with neighbouring
-        # ones
+        # outer lines are shorter
         r = (p - q.rotated(pi / 3, p)) * (self.edge / p.dist(q))
         r2 = (p - r).rotated(-2 * pi / 3, p) - p
         self.draw_line(p - r, q - r2)
         self.draw_line(p + r2, q + r)
 
 
-def visualise(binary, paths, filename):
+def visualise(vertical, slanted, filename):
+    """Make a pdf showing the mess.
+
+    Args:
+        vertical: [[bool]] -- see format_datovych_souboru.txt
+        slanted: [[bool]] -- see format_datovych_souboru.txt
+        filename: str -- output filename
+
+    """
     surface = cairo.PDFSurface(filename, WIDTH, HEIGHT)
     cr = HocusContext(surface)
 
-    def test_vis():
-        """Draw all possible cases"""
-        for i in range(7):
-            for j, e in enumerate(combinations(range(1, 7), i)):
-                cr.draw_cube(50 * (j + 1), 50 * (i + 1), e)
+    # Distance between centers of adjacent cubes -- diagonal of one field (see
+    # format_datovych_souboru.txt). Measured with Monsters, Inc. ruler.
+    dist = 6 * mm
 
-    p = Point(100, 100)
-    q = (p + Point(0, 100)).rotated(- pi / 3, Point(100, 100))
-    r = q + Point(0, 100)
-    cr.draw_cube(p, [3])
-    cr.draw_cube(q, [6, 4])
-    cr.draw_cube(r, [1])
-    cr.draw_link(q, r)
-    cr.draw_link(p, q)
+    field_height = dist * sin(pi / 6)
+    field_width = dist * cos(pi / 6)
+
+    N = len(vertical)
+    M = len(vertical[0])
+
+    # here i is indexing cubes, not fields
+    for i in range(N + 1):
+        # j also, but the number of cubes columns is the same as the number of
+        # vertical edges columns
+        for j in range(M):
+
+            if j % 2 != i % 2:
+                # cubes are only in two corners of a field
+                continue
+
+            p = Point(100 + field_width * j, 100 + field_height * i)
+
+            edges = []
+            if i > 0 and vertical[i - 1][j]:
+                edges.append(1)
+                cr.draw_link(p, p + Point(0, -2 * field_height))
+            if i < N and vertical[i][j]:
+                edges.append(4)
+
+            if i > 0:
+                if j > 0 and slanted[i - 1][j - 1]:
+                    edges.append(6)
+                    cr.draw_link(p, p + Point(-field_width, -field_height))
+                if j < M - 1 and slanted[i - 1][j]:
+                    edges.append(2)
+                    cr.draw_link(p, p + Point(+field_width, -field_height))
+            if i < N:
+                if j > 0 and slanted[i][j - 1]:
+                    edges.append(5)
+                if j < M - 1 and slanted[i][j]:
+                    edges.append(3)
+
+            if edges:
+                cr.draw_cube(p, edges)
+
     cr.show_page()
 
 
+def read_array(filename):
+    """Read a file with rows of "0"s ans "1"s and convert them to bools."""
+    with open(filename, "r") as fin:
+        return [
+            [bool(int(x)) for x in row]
+            for row in fin.read().split("\n") if row
+        ]
+
+
 if __name__ == "__main__":
-    visualise([], [], "visualisation.pdf")
+
+    vertical = read_array("svisle_cary.txt")
+    slanted = read_array("sikme_cary.txt")
+
+    visualise(vertical, slanted, "visualisation.pdf")
