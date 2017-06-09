@@ -1,0 +1,28 @@
+Soubor sikme_cary.txt obsahuje 0 a 1, podle toho, zda je na dané buňce čtvercové sítě čára, či nikoliv.
+Měřítko čtvercové sítě je následující: Minimální penroseův trojúhelník je 2 políčka vysoký a 1 široký.
+čáry vedou buďto z levého horního rohu do pravého dolního nebo naopak, tyto dva typy čar se v mřížce střídají jako na šachovnici.
+V levém horním rohu mřížky je čára vedoucí z levého horního rohu do pravého dolního.
+V souboru není zahrnuta oprava dvou zvláštních míst na mapě, kde jsou prohozená lichá a sudá pole, tj. vedou tam čáry v opačných směrech.
+
+Soubor svisle_cary.txt obsahuje 0 a 1, podle toho, zda na dané svislé hraně výše popsané čtvercové mžížky je, či není hrana.
+V tomto souboru jsou zahrnuty odlišnosti na zvláštních místech v mapě.
+
+Příklad:
+
+Obrázek:
+  /|
+/| |    kde /| je minimální penroseův trojúhelník
+\|/|\       \|
+  \| |
+
+sikme_cary.txt:
+010
+100
+111
+010
+
+svisle_cary.txt:
+0010
+0110
+0110
+0011
