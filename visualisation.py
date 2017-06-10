@@ -1,6 +1,7 @@
 from math import pi, cos, sin, sqrt
+from graph import Direction, Point
 
-import cairo
+import cairocffi as cairo
 
 # A4
 # HEIGHT, WIDTH = 8.3 * 72, 11.7 * 72
@@ -9,46 +10,6 @@ import cairo
 HEIGHT, WIDTH = 11.7 * 72, 2 * 8.3 * 72
 
 mm = 72 / 25.4  # dpi / (number of millimeters in one inch)
-
-
-class Point:
-    def __init__(self, x, y):
-        self.x = x
-        self.y = y
-
-    def __repr__(self):
-        return "(" + str(self.x) + "," + str(self.y) + ")"
-
-    def __add__(self, b):
-        return Point(self.x + b.x, self.y + b.y)
-
-    def __sub__(self, b):
-        return Point(self.x - b.x, self.y - b.y)
-
-    def __mul__(self, c):
-        return Point(self.x * c, self.y * c)
-
-    def __iter__(self):
-        yield self.x
-        yield self.y
-
-    def rotated(self, alpha, around=None):
-        if not around:
-            around = Point(0, 0)
-        x = self.x - around.x
-        y = self.y - around.y
-        return Point(
-            cos(alpha) * x - sin(alpha) * y,
-            sin(alpha) * x + cos(alpha) * y
-        ) + around
-        return
-
-    def norm(self):
-        return sqrt(self.x ** 2 + self.y ** 2)
-
-    def dist(self, q):
-        return (self - q).norm()
-
 
 class HocusContext(cairo.Context):
 
@@ -93,7 +54,7 @@ class HocusContext(cairo.Context):
                 different colours?
         """
 
-        edges = set(e - 1 for e in edges)
+        # edges = set(e - 2 for e in edges)
         top = middle - Point(0, self.edge)
 
         # No comment would help you. Draw it (with explain=True).
@@ -145,78 +106,23 @@ class HocusContext(cairo.Context):
         self.draw_line(p + r2, q + r)
 
 
-def visualise(vertical, slanted, filename):
-    """Make a pdf showing the mess.
-
-    Args:
-        vertical: [[bool]] -- see format_datovych_souboru.txt
-        slanted: [[bool]] -- see format_datovych_souboru.txt
-        filename: str -- output filename
-
-    """
+def visualise(graph, filename="visualisation.pdf"):
     surface = cairo.PDFSurface(filename, WIDTH, HEIGHT)
     cr = HocusContext(surface)
 
-    # Distance between centers of adjacent cubes -- diagonal of one field (see
-    # format_datovych_souboru.txt). Measured with Monsters, Inc. ruler.
     dist = 6 * mm
 
     field_height = dist * sin(pi / 6)
     field_width = dist * cos(pi / 6)
 
-    N = len(vertical)
-    M = len(vertical[0])
+    for node in graph.nodes:
+        p = Point(node.location.x * field_width + 100, node.location.y * field_height + 100)
+        if Direction.UP in node.directions:
+            cr.draw_link(p, p + Point(0, -2 * field_height))
+        if Direction.UPLEFT in node.directions:
+            cr.draw_link(p, p + Point(-field_width, -field_height))
+        if Direction.UPRIGHT in node.directions:
+            cr.draw_link(p, p + Point(+field_width, -field_height))
 
-    # here i is indexing cubes, not fields
-    for i in range(N + 1):
-        # j also, but the number of cubes columns is the same as the number of
-        # vertical edges columns
-        for j in range(M):
-
-            if j % 2 != i % 2:
-                # cubes are only in two corners of a field
-                continue
-
-            p = Point(100 + field_width * j, 100 + field_height * i)
-
-            edges = []
-            if i > 0 and vertical[i - 1][j]:
-                edges.append(1)
-                cr.draw_link(p, p + Point(0, -2 * field_height))
-            if i < N and vertical[i][j]:
-                edges.append(4)
-
-            if i > 0:
-                if j > 0 and slanted[i - 1][j - 1]:
-                    edges.append(6)
-                    cr.draw_link(p, p + Point(-field_width, -field_height))
-                if j < M - 1 and slanted[i - 1][j]:
-                    edges.append(2)
-                    cr.draw_link(p, p + Point(+field_width, -field_height))
-            if i < N:
-                if j > 0 and slanted[i][j - 1]:
-                    edges.append(5)
-                if j < M - 1 and slanted[i][j]:
-                    edges.append(3)
-
-            if edges:
-                cr.draw_cube(p, edges)
-
+        cr.draw_cube(p, node.directions)
     cr.show_page()
-
-
-def read_array(filename):
-    """Read a file with rows of "0"s ans "1"s and convert them to bools."""
-    with open(filename, "r") as fin:
-        return [
-            [bool(int(x)) for x in row]
-            for row in fin.read().split("\n") if row
-        ]
-
-
-if __name__ == "__main__":
-
-    vertical = read_array("svisle_cary.txt")
-    slanted = read_array("sikme_cary.txt")
-
-    visualise(vertical, slanted, "visualisation.pdf")

@@ -5,8 +5,8 @@ from visualisation import visualise
 
 def main():
     graph = get_graph()
-    paths = solve(graph)
-    visualise(graph, paths)
+    # paths = solve(graph)
+    visualise(graph)
     print('42')
 
 
