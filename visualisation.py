@@ -62,7 +62,12 @@ class HocusContext(cairo.Context):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.later_lines = []
+        self.postponed_lines = []
+        self.rgb = (0, 0, 0)
+
+    def set_source_rgb(self, r, g, b):
+        self.rgb = (r, g, b)
+        super().set_source_rgb(r, g, b)
 
     def draw_point(self, p):
         """Draw cross at p"""
@@ -90,13 +95,18 @@ class HocusContext(cairo.Context):
             self.line_to(*q)
             self.stroke()
         else:
-            self.later_lines.append((p, q, line_width, line_cap))
+            rgb = self.rgb
+            self.postponed_lines.append(((p, q, line_width, line_cap), rgb))
 
     def stop_procrastinating(self):
-        """Draw all postponed lines"""
-        for args in self.later_lines:
+        """Draw all postponed lines
+
+        This is useful in combination with coloring.
+        """
+        for args, rgb in self.postponed_lines:
+            self.set_source_rgb(*rgb)
             self.draw_line(*args, procrastinate=False)
-        self.later_lines = []
+        self.postponed_lines = []
 
     def fill_path(self, path, color=(0.2, 0.1, 0.9)):
         self.move_to(*path[0])
@@ -116,7 +126,9 @@ class HocusContext(cairo.Context):
             middle: Point -- center of the 2D projection of the cube
             edges: Iterable -- list of edges adjacent to the cube. Numbered
                 from top clockwise 1..6.
-            coloring: [(bool, bool)] -- TODO
+            coloring: [(bool, bool)] -- list of six pairs of bools indicating
+                whether given half of each of the six incoming edges should be
+                colored.
             explain: bool -- Should different parts of the cube be drawn in
                 different colours?
         """
@@ -143,8 +155,9 @@ class HocusContext(cairo.Context):
             if not (i in edges or (i + 1) % 6 in edges):
                 p = top.rotated(i * pi / 3, middle)
                 q = top.rotated((i + 1) * pi / 3, middle)
-                if coloring and coloring[(i+1)%2][0] or coloring[(i + 2) % 6][1]:
-                    self.fill_path([middle, p, q])
+                if coloring:
+                    if coloring[(i+1) % 2][0] or coloring[(i+2) % 6][1]:
+                        self.fill_path([middle, p, q])
                 self.draw_line(p, q)
 
         if explain:
@@ -211,5 +224,6 @@ def visualise(graph, filename="visualisation.pdf"):
         if Direction.UPRIGHT in node.directions:
             cr.draw_link(p, p + Point(+field_width, -field_height))
 
-        cr.draw_cube(p, node.directions)
+        cr.draw_cube(p, node.directions, coloring=[(1, 0), (0, 0), (0, 0), (1, 1), (0, 0), (0, 0)], explain=True)
+    cr.stop_procrastinating()
     cr.show_page()
