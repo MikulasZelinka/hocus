@@ -1,5 +1,5 @@
 from math import pi, cos, sin, sqrt
-from graph import Direction, Point
+from graph import Direction
 
 import cairocffi as cairo
 
@@ -10,6 +10,45 @@ import cairocffi as cairo
 HEIGHT, WIDTH = 11.7 * 72, 2 * 8.3 * 72
 
 mm = 72 / 25.4  # dpi / (number of millimeters in one inch)
+
+
+class Point:
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
+
+    def __repr__(self):
+        return "(" + str(self.x) + "," + str(self.y) + ")"
+
+    def __add__(self, b):
+        return Point(self.x + b.x, self.y + b.y)
+
+    def __sub__(self, b):
+        return Point(self.x - b.x, self.y - b.y)
+
+    def __mul__(self, c):
+        return Point(self.x * c, self.y * c)
+
+    def __iter__(self):
+        yield self.x
+        yield self.y
+
+    def rotated(self, alpha, around=None):
+        if not around:
+            around = Point(0, 0)
+        x = self.x - around.x
+        y = self.y - around.y
+        return Point(
+            cos(alpha) * x - sin(alpha) * y,
+            sin(alpha) * x + cos(alpha) * y
+        ) + around
+
+    def norm(self):
+        return sqrt(self.x ** 2 + self.y ** 2)
+
+    def dist(self, q):
+        return (self - q).norm()
+
 
 class HocusContext(cairo.Context):
 
@@ -116,7 +155,10 @@ def visualise(graph, filename="visualisation.pdf"):
     field_width = dist * cos(pi / 6)
 
     for node in graph.nodes:
-        p = Point(node.location.x * field_width + 100, node.location.y * field_height + 100)
+        p = Point(
+            node.location[0] * field_width + 100,
+            node.location[1] * field_height + 100
+        )
         if Direction.UP in node.directions:
             cr.draw_link(p, p + Point(0, -2 * field_height))
         if Direction.UPLEFT in node.directions:

@@ -1,5 +1,5 @@
 from representation import get_graph
-from solver import solve
+# from solver import solve
 from visualisation import visualise
 
 

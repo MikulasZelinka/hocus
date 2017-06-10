@@ -1,4 +1,4 @@
-from graph import Point, Node, Graph, Direction
+from graph import Node, Graph, Direction
 
 
 def get_graph():
@@ -8,7 +8,7 @@ def get_graph():
     N = len(vertical)
     M = len(vertical[0])
 
-    nodeArray = [[Node(0, 0, []) for _ in range(M)] for _ in range(N + 1)]
+    node_array = [[Node(0, 0, []) for _ in range(M)] for _ in range(N + 1)]
 
     for i in range(N + 1):
         # j also, but the number of cubes columns is the same as the number of
@@ -18,40 +18,41 @@ def get_graph():
                 # cubes are only in two corners of a field
                 continue
 
+            odd = j % 2
+
             directions = []
             neighbors = [None] * 6
 
             if i > 0 and vertical[i - 1][j]:
                 directions.append(Direction.UP)
-                neighbors[Direction.UP] = nodeArray[i-1][j]
+                neighbors[Direction.UP] = node_array[i-1][j]
             if i < N and vertical[i][j]:
                 directions.append(Direction.DOWN)
-                neighbors[Direction.DOWN] = nodeArray[i+1][j]
+                neighbors[Direction.DOWN] = node_array[i+1][j]
 
             if i > 0:
                 if j > 0 and slanted[i - 1][j - 1]:
                     directions.append(Direction.UPLEFT)
-                    neighbors[Direction.UPLEFT] = nodeArray[i - 1][j - 1] if j % 2 == 0 else nodeArray[i][j - 1]
+                    neighbors[Direction.UPLEFT] = node_array[i-1 + odd][j - 1]
                 if j < M - 1 and slanted[i - 1][j]:
                     directions.append(Direction.UPRIGHT)
-                    neighbors[Direction.UPRIGHT] = nodeArray[i - 1][j + 1] if j % 2 == 0 else nodeArray[i][j + 1]
+                    neighbors[Direction.UPRIGHT] = node_array[i-1 + odd][j + 1]
             if i < N:
                 if j > 0 and slanted[i][j - 1]:
                     directions.append(Direction.DOWNLEFT)
-                    neighbors[Direction.DOWNLEFT] = nodeArray[i][j - 1] if j % 2 == 0 else nodeArray[i + 1][j - 1]
+                    neighbors[Direction.DOWNLEFT] = node_array[i + odd][j - 1]
                 if j < M - 1 and slanted[i][j]:
                     directions.append(Direction.DOWNRIGHT)
-                    neighbors[Direction.DOWNRIGHT] = nodeArray[i][j + 1] if j % 2 == 0 else nodeArray[i + 1][j + 1]
+                    neighbors[Direction.DOWNRIGHT] = node_array[i + odd][j + 1]
 
-            nodeArray[i][j].location = Point(j, i)
-            nodeArray[i][j].directions = directions
-            nodeArray[i][j].neighbors = neighbors
+            node_array[i][j].location = [j, i]
+            node_array[i][j].directions = directions
+            node_array[i][j].neighbors = neighbors
 
-    nodes = [node for row in nodeArray for node in row]
-    nodes = list(filter(lambda node: len(node.directions) > 0, nodes))
+    nodes = [node for row in node_array for node in row]
+    nodes = [node for node in nodes if node.directions]
 
     return Graph(nodes)
-
 
 
 def read_array(filename):
@@ -61,5 +62,3 @@ def read_array(filename):
             [bool(int(x)) for x in row]
             for row in fin.read().split("\n") if row
         ]
-
-
