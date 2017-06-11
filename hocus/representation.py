@@ -61,7 +61,6 @@ def get_graph():
 
 
 def add_special_nodes(node_array):
-
     # TOP-RIGHT corner:
     # Middle node (at 108, 14)
     middle_x = 108
@@ -98,6 +97,48 @@ def add_special_nodes(node_array):
     node_array[down_left_y + 3][down_left_x + 3].neighbors[Direction.UPLEFT] = down_left_node
 
     # LEFT-MIDDLE part:
+    down_left_x = 10
+    down_left_y = 50
+    down_left_node = node_array[down_left_y][down_left_x]
+
+    # left F-shaped node
+    left_x = down_left_x
+    left_y = down_left_y - 6
+    left_node = Node(left_x, left_y, [Direction.DOWN, Direction.DOWNRIGHT, Direction.UPRIGHT])
+    node_array[left_y][left_x] = left_node
+
+    left_node.neighbors[Direction.DOWN] = down_left_node
+    down_left_node.directions.append(Direction.UP)
+    down_left_node.neighbors[Direction.UP] = left_node
+
+    # right \| shaped node
+    right_x = left_x + 4
+    right_y = left_y + 4
+    right_node = Node(right_x, right_y, [Direction.UP, Direction.DOWN, Direction.UPLEFT])
+    node_array[right_y][right_x] = right_node
+
+    right_node.neighbors[Direction.UPLEFT] = left_node
+    left_node.neighbors[Direction.DOWNRIGHT] = right_node
+
+    right_node.neighbors[Direction.UP] = node_array[right_y - 2][right_x]
+    node_array[right_y - 2][right_x].neighbors[Direction.DOWN] = right_node
+
+    right_node.neighbors[Direction.DOWN] = node_array[right_y + 2][right_x]
+    node_array[right_y + 2][right_x].neighbors[Direction.UP] = right_node
+
+    # top | shaped node
+    #     /
+    top_x = left_x + 2
+    top_y = left_y - 2
+    top_node = Node(top_x, top_y, [Direction.UP, Direction.DOWNLEFT])
+    node_array[top_y][top_x] = top_node
+
+    top_node.neighbors[Direction.DOWNLEFT] = left_node
+    left_node.neighbors[Direction.UPRIGHT] = top_node
+
+    top_node.neighbors[Direction.UP] = node_array[top_y - 2][top_x]
+    node_array[top_y - 2][top_x].directions.append(Direction.DOWN)
+    node_array[top_y - 2][top_x].neighbors[Direction.DOWN] = top_node
 
     return node_array
 
