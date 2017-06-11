@@ -14,6 +14,7 @@ def solve(graph):
     Returns:
 
     """
+    print("\nSolver started")
 
     explored = set()
 
@@ -29,13 +30,13 @@ def solve(graph):
 
     # find nodes with degree 0
     starts = [node for node in graph.nodes if len(node.directions) == 1]
-    start = starts[0]
-    start_dir = start.directions[0]
-    q = deque()
-    for face in Face(start_dir).adjacents():
-        path_part = PathPart(start, start.neighbors[start_dir], start_dir, face)
-        q.append(path_part)
-        mark_explored(path_part)
+    for start in starts:
+        start_dir = start.directions[0]
+        q = deque()
+        for face in Face(start_dir).adjacents():
+            path_part = PathPart(start, start.neighbors[start_dir], start_dir, face)
+            q.append(path_part)
+            mark_explored(path_part)
 
     iter = 0
     while len(q) > 0:
@@ -71,11 +72,16 @@ def solve(graph):
         if iter % 1000 == 0:
             print("Explored {} parts".format(len(explored)))
 
-    total_explored = len(explored)
-    total_possible = sum([len(node.directions) for node in graph.nodes]) * 4
+    total_explored = len(explored) // 2
+    total_possible = sum([len(node.directions) for node in graph.nodes]) * 4 // 2
 
     print("Explored in total: {}".format(total_explored))
-    print("All edges: {}".format(total_possible))
-    print("Left uncolored: {}".format(total_possible - total_explored))
+    print("All edgefaces: {}".format(total_possible))
+    print("Left uncolored: {} ({:.2f})%".format(
+        total_possible - total_explored,
+        100 * (total_possible - total_explored) / total_possible
+    ))
+    print("Solver finished\n")
+
 
 
