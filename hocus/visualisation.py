@@ -2,7 +2,7 @@ from math import pi, cos, sin, sqrt
 
 import cairocffi as cairo
 
-from hocus.graph import Direction
+from hocus.graph import Direction, Node, Graph
 
 # A4
 # HEIGHT, WIDTH = 8.3 * 72, 11.7 * 72
@@ -150,19 +150,27 @@ class HocusContext(cairo.Context):
             if i in edges:
                 self.draw_line(middle, top.rotated(i * pi / 3, middle))
 
-        if explain:
-            self.set_source_rgb(0.6, 0.6, 0)
         for i in range(6):
             if not (i in edges or (i + 1) % 6 in edges):
                 p = top.rotated(i * pi / 3, middle)
                 q = top.rotated((i + 1) * pi / 3, middle)
                 if coloring:
-                    if coloring[(i+1) % 2][0] or coloring[(i+2) % 6][1]:
-                        self.fill_path([middle, p, q])
+#coloring[(i+1) % 2][0] or 
+                    if i in [0, 2, 4] and i not in edges:
+                        for j in [1, 2, 4, 5]:
+                            if (i+j) % 6 in edges:
+                                self.draw_point(q)
+                                side = (
+                                    i == 0 or (i == 4 and (i+j) % 6 in [0, 3])
+                                )
+                                if coloring[(i+j) % 6][side]:
+                                    self.fill_path([middle, q, p, p - q + middle])
+                    if coloring[(i+2) % 6][1]:
+                        self.fill_path([middle, p, q], (0.5, 0.5, 1))
+                if explain:
+                    self.set_source_rgb(0.6, 0.6, 0)
                 self.draw_line(p, q)
 
-        if explain:
-            self.set_source_rgb(0.3, 0.3, 0.5)
         for i in range(6):
             if i in edges:
                 vert = top.rotated(i * pi / 3, middle)
@@ -175,12 +183,14 @@ class HocusContext(cairo.Context):
                                 [middle, vert, q + vert - middle, q]
                             )
                         q = middle.rotated(sgn * pi / 3, vert)
+                        if explain:
+                            self.set_source_rgb(0.3, 0.3, 0.5)
                         self.draw_line(q, q + vert - middle)
 
         if explain:
             self.set_source_rgb(0, 0, 0)
 
-    def draw_link(self, a, b, coloring=None):
+    def draw_link(self, a, b, coloring=None, fill_color=(0.3, 0, 0.9)):
         """Draw connection between two cubes"""
 
         p = a + (b - a) * (self.edge / b.dist(a))
@@ -191,10 +201,11 @@ class HocusContext(cairo.Context):
         r2 = (p - r).rotated(-2 * pi / 3, p) - p
 
         if coloring:
-            self.set_source_rgb(0.3, 0, 0.9)
+            self.set_source_rgb(*fill_color)
             if coloring[0]:
                 self.fill_path([p, q, q - r2, p - r, p])
             if coloring[1]:
+                pass
                 self.fill_path([p, q, q + r, p + r2, p])
             self.set_source_rgb(0, 0, 0)
 
@@ -216,13 +227,62 @@ def visualise(graph, filename="data/visualisation.pdf"):
     def transform(p):
         return Point(p.x * field_width + 100, p.y * field_height + 100)
 
+    n1 = Node(
+        20, 20,
+        [Direction.DOWNRIGHT, Direction.UPLEFT, Direction.UP],
+        coloring={
+            Direction.DOWNRIGHT: [1, 0, 0, 0],
+            Direction.UPLEFT: [1, 0, 0, 0],
+            Direction.UP: [0, 1, 0, 0],
+        }
+    )
+    n2 = Node(
+        21, 21,
+        [Direction.UPLEFT],
+        coloring={Direction.UPLEFT: [1, 0, 0, 0]}
+    )
+    n3 = Node(
+        19, 19,
+        [Direction.DOWNRIGHT],
+        coloring={Direction.DOWNRIGHT: [1, 0, 0, 0]}
+    )
+    n4 = Node(
+        20, 18,
+        [Direction.DOWN],
+        coloring={Direction.DOWN: [0, 1, 0, 0]}
+    )
+
+    n1.neighbors[Direction.DOWNRIGHT] = n2
+    n1.neighbors[Direction.UPLEFT] = n3
+    n2.neighbors[Direction.UPLEFT] = n1
+    n3.neighbors[Direction.DOWNRIGHT] = n1
+    n4.neighbors[Direction.DOWN] = n1
+    n1.neighbors[Direction.UP] = n4
+
+    graph = Graph([n1, n2, n3, n4])
+
+
     for node in graph.nodes:
         p = transform(Point(*node.location))
-        for n in node.neighbors:
+        print(node)
+        for d, n in enumerate(node.neighbors):
             if n is not None:
-                cr.draw_link(p, transform(Point(*n.location)))
+                print(d, node.coloring)
+                coloring = node.coloring.get(d, [])[:2]
+                if d in [0, 2, 4]:
+                    coloring = list(reversed(coloring))
+                cr.draw_link(
+                    p,
+                    transform(Point(*n.location)),
+                    coloring=coloring
+                )
 
-        cr.draw_cube(p, node.directions, coloring=[(1, 0), (0, 0), (0, 0), (1, 1), (0, 0), (0, 0)], explain=True)
+        cube_coloring = [(0, 0)] * 6
+        for d in node.directions:
+            cube_coloring[d] = node.coloring[d][:2]
+            if d in [0, 2, 4]:
+                cube_coloring[d] = list(reversed(cube_coloring[d]))
+        cr.draw_cube(p, node.directions, explain=True, coloring=cube_coloring)
     cr.stop_procrastinating()
     cr.show_page()
     print('Saved result to', filename)
