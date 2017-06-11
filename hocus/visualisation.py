@@ -2,8 +2,6 @@ from math import pi, cos, sin, sqrt
 
 import cairocffi as cairo
 
-from hocus.graph import Direction
-
 # A4
 # HEIGHT, WIDTH = 8.3 * 72, 11.7 * 72
 
@@ -146,7 +144,7 @@ class HocusContext(cairo.Context):
         self.draw_line(p + r2, q + r)
 
 
-def visualise(graph, filename="data/visualisation.pdf"):
+def visualise(graph, filename="data/visualisation.pdf", show_positions=True):
     surface = cairo.PDFSurface(filename, WIDTH, HEIGHT)
     cr = HocusContext(surface)
 
@@ -165,5 +163,12 @@ def visualise(graph, filename="data/visualisation.pdf"):
                 cr.draw_link(p, transform(Point(*n.location)))
 
         cr.draw_cube(p, node.directions)
+        if show_positions:
+            cr.move_to(*p)
+            cr.set_source_rgb(1, 0, 0)
+            cr.set_font_size(2)
+            cr.show_text(str(node.location))
+            cr.set_source_rgb(0, 0, 0)
+
     cr.show_page()
     print('Saved result to', filename)
