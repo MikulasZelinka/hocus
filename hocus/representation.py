@@ -8,7 +8,7 @@ def get_graph():
     N = len(vertical)
     M = len(vertical[0])
 
-    node_array = [[Node(0, 0, []) for _ in range(M)] for _ in range(N + 1)]
+    node_array = [[None for _ in range(M)] for _ in range(N + 1)]
 
     for i in range(N + 1):
         # j also, but the number of cubes columns is the same as the number of
@@ -18,40 +18,37 @@ def get_graph():
                 # cubes are only in two corners of a field
                 continue
 
-            odd = j % 2
-
             directions = []
             neighbors = [None] * 6
 
             if i > 0 and vertical[i - 1][j]:
                 directions.append(Direction.UP)
-                neighbors[Direction.UP] = node_array[i-1][j]
+                neighbors[Direction.UP] = node_array[i-2][j]
             if i < N and vertical[i][j]:
                 directions.append(Direction.DOWN)
-                neighbors[Direction.DOWN] = node_array[i+1][j]
+                neighbors[Direction.DOWN] = node_array[i+2][j]
 
             if i > 0:
                 if j > 0 and slanted[i - 1][j - 1]:
                     directions.append(Direction.UPLEFT)
-                    neighbors[Direction.UPLEFT] = node_array[i-1 + odd][j - 1]
+                    neighbors[Direction.UPLEFT] = node_array[i-1][j - 1]
                 if j < M - 1 and slanted[i - 1][j]:
                     directions.append(Direction.UPRIGHT)
-                    neighbors[Direction.UPRIGHT] = node_array[i-1 + odd][j + 1]
+                    neighbors[Direction.UPRIGHT] = node_array[i-1][j + 1]
             if i < N:
                 if j > 0 and slanted[i][j - 1]:
                     directions.append(Direction.DOWNLEFT)
-                    neighbors[Direction.DOWNLEFT] = node_array[i + odd][j - 1]
+                    neighbors[Direction.DOWNLEFT] = node_array[i][j - 1]
                 if j < M - 1 and slanted[i][j]:
                     directions.append(Direction.DOWNRIGHT)
-                    neighbors[Direction.DOWNRIGHT] = node_array[i + odd][j + 1]
+                    neighbors[Direction.DOWNRIGHT] = node_array[i][j + 1]
 
-            node_array[i][j].location = [j, i]
-            node_array[i][j].directions = directions
-            node_array[i][j].neighbors = neighbors
+            node_array[i][j] = Node(j, i, directions, neighbors)
 
-    nodes = [node for row in node_array for node in row]
-    nodes = [node for node in nodes if node.directions]
-
+    nodes = [
+        node for row in node_array for node in row
+        if node and node.directions
+    ]
     return Graph(nodes)
 
 
