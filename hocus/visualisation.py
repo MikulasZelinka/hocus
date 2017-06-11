@@ -144,7 +144,7 @@ class HocusContext(cairo.Context):
         self.draw_line(p + r2, q + r)
 
 
-def visualise(graph, filename="data/visualisation.pdf", show_positions=True):
+def visualise(graph, filename="data/visualisation.pdf", show_positions=False):
     surface = cairo.PDFSurface(filename, WIDTH, HEIGHT)
     cr = HocusContext(surface)
 
@@ -166,7 +166,7 @@ def visualise(graph, filename="data/visualisation.pdf", show_positions=True):
         if show_positions:
             cr.move_to(*p)
             cr.set_source_rgb(1, 0, 0)
-            cr.set_font_size(2)
+            cr.set_font_size(5)
             cr.show_text(str(node.location))
             cr.set_source_rgb(0, 0, 0)
 

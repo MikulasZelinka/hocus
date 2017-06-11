@@ -6,7 +6,7 @@ from hocus.visualisation import visualise
 def main():
     graph = get_graph()
     # paths = solve(graph)
-    visualise(graph)
+    visualise(graph, show_positions=True)
 
 
 if __name__ == "__main__":
