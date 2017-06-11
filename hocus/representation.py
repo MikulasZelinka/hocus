@@ -56,7 +56,6 @@ def get_graph():
         node for row in node_array for node in row
         if node and node.directions
     ]
-
     return Graph(nodes)
 
 
