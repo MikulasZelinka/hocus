@@ -17,15 +17,25 @@ def solve(graph):
     print("\nSolver started")
 
     explored = set()
+    for node in graph.nodes:
+        node.coloring = {d: [False] * 4 for d in node.directions}
+
+    def dirface_to_int(direction, face):
+        return 0
 
     def opposite_path_part(ppart):
         return PathPart(ppart.node_to, ppart.node_from, ppart.dir.opposite(), ppart.face)
 
     def mark_explored(ppart):
+        ppart.node_from.coloring[ppart.dir][dirface_to_int(ppart.dir, ppart.face)] = True
+        ppart.node_to.coloring[ppart.dir.opposite()][dirface_to_int(ppart.dir.opposite(), ppart.face)] = True
+
         explored.add(ppart)
         explored.add(opposite_path_part(ppart))
 
     def is_explored(ppart):
+        # could do this in fast constant time by checking the node coloring
+        # no need for speed, favoring readability
         return ppart in explored
 
     # find nodes with degree 0

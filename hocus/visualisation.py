@@ -199,7 +199,7 @@ class HocusContext(cairo.Context):
         self.draw_line(p + r2, q + r)
 
 
-def visualise(graph, filename="data/visualisation.pdf", show_positions=False):
+def visualise(graph, filename="out/visualisation.pdf", show_positions=False):
     surface = cairo.PDFSurface(filename, WIDTH, HEIGHT)
     cr = HocusContext(surface)
 
