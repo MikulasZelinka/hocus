@@ -199,7 +199,7 @@ class HocusContext(cairo.Context):
         self.draw_line(p + r2, q + r)
 
 
-def visualise(graph, filename="out/visualisation.pdf", show_positions=False):
+def visualise(graph, filename="data/result.pdf", show_positions=False):
     surface = cairo.PDFSurface(filename, WIDTH, HEIGHT)
     cr = HocusContext(surface)
 
@@ -226,7 +226,7 @@ def visualise(graph, filename="out/visualisation.pdf", show_positions=False):
                 colors = [(0.8, 0.2, 1) if c else (1, 1, 1) for c in coloring]
 
                 # point in the 2D projection of the current cube nearest to the
-                # negihbouring cube
+                # neighbouring cube
                 nearest = p + (q - p) * (HocusContext.edge / p.dist(q))
 
                 # (see a picture of a cube...)
