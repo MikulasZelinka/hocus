@@ -150,7 +150,7 @@ def visualise(graph, filename="data/visualisation.pdf"):
     surface = cairo.PDFSurface(filename, WIDTH, HEIGHT)
     cr = HocusContext(surface)
 
-    dist = 6 * mm
+    dist = 3 * mm
 
     field_height = dist * sin(pi / 6)
     field_width = dist * cos(pi / 6)
