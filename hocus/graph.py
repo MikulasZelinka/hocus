@@ -29,3 +29,9 @@ class Graph:
             self.nodes = []
         else:
             self.nodes = nodes
+
+    def test(self):
+        for node in self.nodes:
+            for i in range(6):
+                if node.neighbors[i] and (node.neighbors[i].neighbors[(i + 3) % 6] != node):
+                    print('Wrong link between nodes', node.location, 'and', node.neighbors[i].location)
