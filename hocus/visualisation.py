@@ -2,7 +2,7 @@ from math import pi, cos, sin, sqrt
 
 import cairocffi as cairo
 
-from hocus.graph import Direction, Node, Graph
+from hocus.graph import Direction
 
 # A4
 # HEIGHT, WIDTH = 8.3 * 72, 11.7 * 72
@@ -63,7 +63,7 @@ class HocusContext(cairo.Context):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.postponed_lines = []
+        self.postponed = {}
         self.rgb = (0, 0, 0)
 
     def set_source_rgb(self, r, g, b):
@@ -87,9 +87,9 @@ class HocusContext(cairo.Context):
                   q,
                   line_width=0.8,
                   line_cap=cairo.LINE_CAP_ROUND,
-                  procrastinate=True):
-        """Draw line between p and q... later (if procrastinate=True)"""
-        if not procrastinate:
+                  procrastinate=1000):
+        """Draw line between p and q... later"""
+        if procrastinate == 0:
             self.set_line_width(line_width)
             self.set_line_cap(line_cap)
             self.move_to(*p)
@@ -97,26 +97,37 @@ class HocusContext(cairo.Context):
             self.stroke()
         else:
             rgb = self.rgb
-            self.postponed_lines.append(((p, q, line_width, line_cap), rgb))
+            self.postponed.setdefault(procrastinate, [])
+            self.postponed[procrastinate].append(
+                (self.draw_line, (p, q, line_width, line_cap), rgb)
+            )
+
+    def fill_path(self, path, color=(0.2, 0.1, 0.9), procrastinate=0):
+        if procrastinate == 0:
+            self.move_to(*path[0])
+            for p in path[1:]:
+                self.line_to(*p)
+            self.close_path()
+            rgb = self.rgb
+            self.set_source_rgb(*color)
+            self.fill()
+            self.set_source_rgb(*rgb)
+        else:
+            self.postponed.setdefault(procrastinate, [])
+            self.postponed[procrastinate].append(
+                (self.fill_path, (path, color), self.rgb)
+            )
 
     def stop_procrastinating(self):
-        """Draw all postponed lines
+        """Draw all postponed objects
 
-        This is useful in combination with coloring.
+        A. k. a layers.
         """
-        for args, rgb in self.postponed_lines:
-            self.set_source_rgb(*rgb)
-            self.draw_line(*args, procrastinate=False)
-        self.postponed_lines = []
-
-    def fill_path(self, path, color=(0.2, 0.1, 0.9)):
-        self.move_to(*path[0])
-        for p in path[1:]:
-            self.line_to(*p)
-        self.close_path()
-        self.set_source_rgb(*color)
-        self.fill()
-        self.set_source_rgb(0, 0, 0)
+        for layer, l in sorted(self.postponed.items()):
+            for fun, args, rgb in l:
+                self.set_source_rgb(*rgb)
+                fun(*args, procrastinate=0)
+        self.postponed = {}
 
     def draw_cube(self, middle, edges, coloring=None, explain=False):
         """Draw a cube and some adjacent lines.
@@ -154,19 +165,6 @@ class HocusContext(cairo.Context):
             if not (i in edges or (i + 1) % 6 in edges):
                 p = top.rotated(i * pi / 3, middle)
                 q = top.rotated((i + 1) * pi / 3, middle)
-                if coloring:
-#coloring[(i+1) % 2][0] or 
-                    if i in [0, 2, 4] and i not in edges:
-                        for j in [1, 2, 4, 5]:
-                            if (i+j) % 6 in edges:
-                                self.draw_point(q)
-                                side = (
-                                    i == 0 or (i == 4 and (i+j) % 6 in [0, 3])
-                                )
-                                if coloring[(i+j) % 6][side]:
-                                    self.fill_path([middle, q, p, p - q + middle])
-                    if coloring[(i+2) % 6][1]:
-                        self.fill_path([middle, p, q], (0.5, 0.5, 1))
                 if explain:
                     self.set_source_rgb(0.6, 0.6, 0)
                 self.draw_line(p, q)
@@ -177,11 +175,6 @@ class HocusContext(cairo.Context):
 
                 for sgn in [-1, 1]:
                     if i % 2 == 0 or (i - sgn) % 6 not in edges:
-                        if coloring and coloring[i][max(0, sgn)]:
-                            q = middle.rotated(sgn * pi / 3, vert)
-                            self.fill_path(
-                                [middle, vert, q + vert - middle, q]
-                            )
                         q = middle.rotated(sgn * pi / 3, vert)
                         if explain:
                             self.set_source_rgb(0.3, 0.3, 0.5)
@@ -199,15 +192,6 @@ class HocusContext(cairo.Context):
         # outer lines are shorter
         r = (p - q.rotated(pi / 3, p)) * (self.edge / p.dist(q))
         r2 = (p - r).rotated(-2 * pi / 3, p) - p
-
-        if coloring:
-            self.set_source_rgb(*fill_color)
-            if coloring[0]:
-                self.fill_path([p, q, q - r2, p - r, p])
-            if coloring[1]:
-                pass
-                self.fill_path([p, q, q + r, p + r2, p])
-            self.set_source_rgb(0, 0, 0)
 
         self.draw_line(p, q)
 
@@ -227,62 +211,55 @@ def visualise(graph, filename="data/visualisation.pdf"):
     def transform(p):
         return Point(p.x * field_width + 100, p.y * field_height + 100)
 
-    n1 = Node(
-        20, 20,
-        [Direction.DOWNRIGHT, Direction.UPLEFT, Direction.UP],
-        coloring={
-            Direction.DOWNRIGHT: [1, 0, 0, 0],
-            Direction.UPLEFT: [1, 0, 0, 0],
-            Direction.UP: [0, 1, 0, 0],
-        }
-    )
-    n2 = Node(
-        21, 21,
-        [Direction.UPLEFT],
-        coloring={Direction.UPLEFT: [1, 0, 0, 0]}
-    )
-    n3 = Node(
-        19, 19,
-        [Direction.DOWNRIGHT],
-        coloring={Direction.DOWNRIGHT: [1, 0, 0, 0]}
-    )
-    n4 = Node(
-        20, 18,
-        [Direction.DOWN],
-        coloring={Direction.DOWN: [0, 1, 0, 0]}
-    )
-
-    n1.neighbors[Direction.DOWNRIGHT] = n2
-    n1.neighbors[Direction.UPLEFT] = n3
-    n2.neighbors[Direction.UPLEFT] = n1
-    n3.neighbors[Direction.DOWNRIGHT] = n1
-    n4.neighbors[Direction.DOWN] = n1
-    n1.neighbors[Direction.UP] = n4
-
-    graph = Graph([n1, n2, n3, n4])
-
-
     for node in graph.nodes:
         p = transform(Point(*node.location))
-        print(node)
         for d, n in enumerate(node.neighbors):
-            if n is not None:
-                print(d, node.coloring)
+            # draw only links going downish
+            if d in [2, 3, 4] and n is not None:
+                q = transform(Point(*n.location))
+                cr.draw_link(p, q)
+
                 coloring = node.coloring.get(d, [])[:2]
-                if d in [0, 2, 4]:
-                    coloring = list(reversed(coloring))
-                cr.draw_link(
-                    p,
-                    transform(Point(*n.location)),
-                    coloring=coloring
+                coloring = list(reversed(coloring))
+                colors = [(0.8, 0.2, 1) if c else (1, 1, 1) for c in coloring]
+
+                # point in the 2D projection of the current cube nearest to the
+                # negihbouring cube
+                nearest = p + (q - p) * (HocusContext.edge / p.dist(q))
+
+                # (see a picture of a cube...)
+                angle = 2 * pi / 3 if d == Direction.DOWN else pi / 3
+
+                # left/right 2D projection vertices when looking in the
+                # direction of the neighbour
+                left = nearest.rotated(angle, p)
+                right = nearest.rotated(-angle, p)
+                p2 = Point(*p)
+                q2 = Point(*q)
+
+                # the slanted actually start earlier
+                diff = nearest - p
+                if d != Direction.DOWN:
+                    left -= diff
+                    right -= diff
+                    p2 -= diff
+                else:
+                    q2 += diff
+
+                # draw from top to bottom, vertical links first
+                pl = 2 * node.location[1] + (1 if d != Direction.DOWN else 0)
+                cr.fill_path(
+                    [p2, left, q2 + left - p2, q2],
+                    color=colors[1],
+                    procrastinate=pl
+                )
+                cr.fill_path(
+                    [p2, right, q2 + right - p2, q2],
+                    color=colors[0],
+                    procrastinate=pl
                 )
 
-        cube_coloring = [(0, 0)] * 6
-        for d in node.directions:
-            cube_coloring[d] = node.coloring[d][:2]
-            if d in [0, 2, 4]:
-                cube_coloring[d] = list(reversed(cube_coloring[d]))
-        cr.draw_cube(p, node.directions, explain=True, coloring=cube_coloring)
+        cr.draw_cube(p, node.directions)
     cr.stop_procrastinating()
     cr.show_page()
     print('Saved result to', filename)
