@@ -21,7 +21,12 @@ def solve(graph):
         node.coloring = {d: [False] * 4 for d in node.directions}
 
     def dirface_to_int(direction, face):
-        return 0
+        if direction in [Direction.UP, Direction.DOWN]:
+            return [Face.FRONT, Face.RIGHT, Face.BACK, Face.LEFT].index(face)
+        if direction in [Direction.DOWNLEFT, Direction.UPRIGHT]:
+            return [Face.TOP, Face.RIGHT, Face.BOTTOM, Face.LEFT].index(face)
+        if direction in [Direction.UPLEFT, Direction.DOWNRIGHT]:
+            return [Face.TOP, Face.FRONT, Face.BOTTOM, Face.BACK].index(face)
 
     def opposite_path_part(ppart):
         return PathPart(ppart.node_to, ppart.node_from, ppart.dir.opposite(), ppart.face)
