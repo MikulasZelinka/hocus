@@ -23,18 +23,18 @@ def get_graph():
 
             if i > 0 and vertical[i - 1][j]:
                 directions.append(Direction.UP)
-                neighbors[Direction.UP] = node_array[i-2][j]
+                neighbors[Direction.UP] = node_array[i - 2][j]
             if i < N and vertical[i][j]:
                 directions.append(Direction.DOWN)
-                neighbors[Direction.DOWN] = node_array[i+2][j]
+                neighbors[Direction.DOWN] = node_array[i + 2][j]
 
             if i > 0:
                 if j > 0 and slanted[i - 1][j - 1]:
                     directions.append(Direction.UPLEFT)
-                    neighbors[Direction.UPLEFT] = node_array[i-1][j - 1]
+                    neighbors[Direction.UPLEFT] = node_array[i - 1][j - 1]
                 if j < M - 1 and slanted[i - 1][j]:
                     directions.append(Direction.UPRIGHT)
-                    neighbors[Direction.UPRIGHT] = node_array[i-1][j + 1]
+                    neighbors[Direction.UPRIGHT] = node_array[i - 1][j + 1]
             if i < N:
                 if j > 0 and slanted[i][j - 1]:
                     directions.append(Direction.DOWNLEFT)
@@ -45,10 +45,31 @@ def get_graph():
 
             node_array[i][j] = Node(j, i, directions, neighbors)
 
+    # ugly addition of ugly nodes
+
+    # TOP-RIGHT corner, '\' shaped segment START
+    x = 9
+    y = 56
+    neighbors = [None] * 6
+    directions = [Direction.UPLEFT]
+    neighbors[Direction.UPLEFT] = node_array[x - 2][y - 2]
+    node_array[x][y] = Node(y, x, directions, neighbors)
+
+    x = 7
+    y = 54
+    neighbors = [None] * 6
+    directions = [Direction.DOWNRIGHT]
+    neighbors[Direction.DOWNRIGHT] = node_array[x + 2][y + 2]
+    node_array[x][y] = Node(y, x, directions, neighbors)
+    # TOP-RIGHT corner, '\' shaped segment END
+
+    # ugliness over, back to beautiful
+
     nodes = [
         node for row in node_array for node in row
         if node and node.directions
     ]
+
     return Graph(nodes)
 
 
