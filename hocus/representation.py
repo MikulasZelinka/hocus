@@ -1,9 +1,9 @@
-from graph import Node, Graph, Direction
+from hocus.graph import Node, Graph, Direction
 
 
 def get_graph():
-    vertical = read_array("svisle_cary.txt")
-    slanted = read_array("sikme_cary.txt")
+    vertical = read_array("data/svisle_cary.txt")
+    slanted = read_array("data/sikme_cary.txt")
 
     N = len(vertical)
     M = len(vertical[0])

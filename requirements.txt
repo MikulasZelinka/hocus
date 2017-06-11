@@ -1,1 +1,1 @@
-cairocffi==0.7.2
+cairocffi>=0.7.2
