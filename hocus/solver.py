@@ -15,14 +15,14 @@ def solve(graph):
 
     """
 
-    explored = []
+    explored = set()
 
     def opposite_path_part(ppart):
         return PathPart(ppart.node_to, ppart.node_from, ppart.dir.opposite(), ppart.face)
 
     def mark_explored(ppart):
-        explored.append(ppart)
-        explored.append(opposite_path_part(ppart))
+        explored.add(ppart)
+        explored.add(opposite_path_part(ppart))
 
     def is_explored(ppart):
         return ppart in explored
@@ -67,9 +67,15 @@ def solve(graph):
                 mark_explored(path_part)
                 q.append(path_part)
 
-        if ++iter % 100 == 0:
+        iter += 1
+        if iter % 1000 == 0:
             print("Explored {} parts".format(len(explored)))
 
+    total_explored = len(explored)
+    total_possible = sum([len(node.directions) for node in graph.nodes]) * 4
 
-    # print(len(explored))
+    print("Explored in total: {}".format(total_explored))
+    print("All edges: {}".format(total_possible))
+    print("Left uncolored: {}".format(total_possible - total_explored))
+
 
