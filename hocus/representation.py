@@ -140,6 +140,13 @@ def add_special_nodes(node_array):
     node_array[top_y - 2][top_x].directions.append(Direction.DOWN)
     node_array[top_y - 2][top_x].neighbors[Direction.DOWN] = top_node
 
+    # THE INFAMOUSLY LONG COLUMN:
+    node_array[56][26] = Node(26, 56, [Direction.UP])
+    node_array[56][26].neighbors[Direction.UP] = node_array[54][26]
+
+    node_array[54][26].directions.append(Direction.DOWN)
+    node_array[54][26].neighbors[Direction.DOWN] = node_array[56][26]
+
     return node_array
 
 

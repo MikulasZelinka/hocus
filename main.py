@@ -5,6 +5,7 @@ from hocus.visualisation import visualise
 
 def main():
     graph = get_graph()
+    graph.test()
     # paths = solve(graph)
     visualise(graph, show_positions=False)
 
