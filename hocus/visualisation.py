@@ -213,17 +213,14 @@ def visualise(graph, filename="data/visualisation.pdf"):
     field_height = dist * sin(pi / 6)
     field_width = dist * cos(pi / 6)
 
+    def transform(p):
+        return Point(p.x * field_width + 100, p.y * field_height + 100)
+
     for node in graph.nodes:
-        p = Point(
-            node.location[0] * field_width + 100,
-            node.location[1] * field_height + 100
-        )
-        if Direction.UP in node.directions:
-            cr.draw_link(p, p + Point(0, -2 * field_height))
-        if Direction.UPLEFT in node.directions:
-            cr.draw_link(p, p + Point(-field_width, -field_height))
-        if Direction.UPRIGHT in node.directions:
-            cr.draw_link(p, p + Point(+field_width, -field_height))
+        p = transform(Point(*node.location))
+        for n in node.neighbors:
+            if n is not None:
+                cr.draw_link(p, transform(Point(*n.location)))
 
         cr.draw_cube(p, node.directions, coloring=[(1, 0), (0, 0), (0, 0), (1, 1), (0, 0), (0, 0)], explain=True)
     cr.stop_procrastinating()
