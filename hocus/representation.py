@@ -8,7 +8,10 @@ def get_graph():
     N = len(vertical)
     M = len(vertical[0])
 
-    node_array = [[None for _ in range(M)] for _ in range(N + 1)]
+    node_array = [
+        [Node(0, 0, []) if i % 2 == j % 2 else None for j in range(M)]
+        for i in range(N + 1)
+    ]
 
     for i in range(N + 1):
         # j also, but the number of cubes columns is the same as the number of
@@ -38,17 +41,20 @@ def get_graph():
             if i < N:
                 if j > 0 and slanted[i][j - 1]:
                     directions.append(Direction.DOWNLEFT)
-                    neighbors[Direction.DOWNLEFT] = node_array[i][j - 1]
+                    neighbors[Direction.DOWNLEFT] = node_array[i+1][j - 1]
                 if j < M - 1 and slanted[i][j]:
                     directions.append(Direction.DOWNRIGHT)
-                    neighbors[Direction.DOWNRIGHT] = node_array[i][j + 1]
+                    neighbors[Direction.DOWNRIGHT] = node_array[i+1][j + 1]
 
-            node_array[i][j] = Node(j, i, directions, neighbors)
+            node_array[i][j].location = [j, i]
+            node_array[i][j].directions = directions
+            node_array[i][j].neighbors = neighbors
 
     nodes = [
         node for row in node_array for node in row
         if node and node.directions
     ]
+
     return Graph(nodes)
 
 
