@@ -55,7 +55,7 @@ class HocusContext(cairo.Context):
 
     # distance between two edges of a connecting link in the 2D projection
     # measured with Monsters, Inc. ruler.
-    width = mm
+    width = 1 * mm
 
     # distance from the middle of a cube to one of its vertices in the 2D
     # projection
@@ -222,8 +222,11 @@ def visualise(graph, filename="data/result.pdf", show_positions=False):
                 coloring = node.coloring.get(d, [])[:2]
                 if not coloring:
                     continue
-                coloring = list(reversed(coloring))
-                colors = [(0.8, 0.2, 1) if c else (1, 1, 1) for c in coloring]
+                if d != Direction.DOWNRIGHT:
+                    coloring = list(reversed(coloring))
+                colors = [
+                    (1, 1, 0.7) if c else (0.8, 0.2, 1) for c in coloring
+                ]
 
                 # point in the 2D projection of the current cube nearest to the
                 # neighbouring cube
@@ -232,33 +235,63 @@ def visualise(graph, filename="data/result.pdf", show_positions=False):
                 # (see a picture of a cube...)
                 angle = 2 * pi / 3 if d == Direction.DOWN else pi / 3
 
-                # left/right 2D projection vertices when looking in the
-                # direction of the neighbour
                 left = nearest.rotated(angle, p)
+                if d == Direction.DOWNLEFT:
+                    left = nearest.rotated(2 * angle, p)
+
                 right = nearest.rotated(-angle, p)
+                if d == Direction.DOWNRIGHT:
+                    right = nearest.rotated(-2 * angle, p)
                 p2 = Point(*p)
                 q2 = Point(*q)
 
-                # the slanted actually start earlier
                 diff = nearest - p
                 if d != Direction.DOWN:
-                    left -= diff
-                    right -= diff
-                    p2 -= diff
+                    if (
+                        d == Direction.DOWNLEFT
+                        and Direction.UP not in node.directions
+                        and Direction.DOWNRIGHT not in node.directions
+                    ):
+                        p2 -= diff
+                        right -= diff
+                    if (
+                        d == Direction.DOWNRIGHT
+                        and Direction.UP not in node.directions
+                        and Direction.DOWNLEFT not in node.directions
+                    ):
+                        p2 -= diff
+                        left -= diff
                 else:
                     q2 += diff
 
+                q_left = q2 + left - p2
+                q_right = q2 + right - p2
+
                 # draw from top to bottom, vertical links first
                 pl = 2 * node.location[1] + (1 if d != Direction.DOWN else 0)
+
+                # first halfs
                 cr.fill_path(
-                    [p2, left, q2 + left - p2, q2],
+                    [p2, left, (left + q_left) * 0.5, (p2 + q2) * 0.5],
                     color=colors[1],
                     procrastinate=pl
                 )
                 cr.fill_path(
-                    [p2, right, q2 + right - p2, q2],
+                    [p2, right, (right + q_right) * 0.5, (p2 + q2) * 0.5],
                     color=colors[0],
                     procrastinate=pl
+                )
+
+                # seconds halfs
+                cr.fill_path(
+                    [(left + q_left) * 0.5, (p2 + q2) * 0.5, q2, q_left],
+                    color=colors[1],
+                    procrastinate=pl + (6 if d == Direction.DOWN else 0)
+                )
+                cr.fill_path(
+                    [(right + q_right) * 0.5, (p2 + q2) * 0.5, q2, q_right],
+                    color=colors[0],
+                    procrastinate=pl + (6 if d == Direction.DOWN else 0)
                 )
 
         cr.draw_cube(p, node.directions)
