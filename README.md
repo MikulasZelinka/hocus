@@ -1,7 +1,11 @@
 # hocus
 
-[Input](data/original.jpg):
+Problem: colour all reachable faces (more precisely, we hope that this it the problem).
+
+Input:
 
 ![Input image](data/original.jpg)
 
-Problem: colour all reachable faces.
+Solution:
+
+![Solution](data/result.jpg)
