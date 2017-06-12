@@ -8,4 +8,4 @@ Input:
 
 Solution:
 
-![Solution](data/result.jpg)
+![Solution](data/result.png)
