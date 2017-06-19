@@ -45,13 +45,24 @@ def solve(graph):
 
     # find nodes with degree 0
     starts = [node for node in graph.nodes if len(node.directions) == 1]
-    for start in starts:
-        start_dir = start.directions[0]
-        q = deque()
-        for face in Face(start_dir).adjacents():
-            path_part = PathPart(start, start.neighbors[start_dir], start_dir, face)
-            q.append(path_part)
-            mark_explored(path_part)
+
+    q = deque()
+
+    # launching the search from all ends (not necessary)
+    # for start in starts:
+    #     start_dir = start.directions[0]
+    #     for face in Face(start_dir).adjacents():
+    #         path_part = PathPart(start, start.neighbors[start_dir], start_dir, face)
+    #         q.append(path_part)
+    #         mark_explored(path_part)
+
+    # launch the search from one face of one end
+    start = starts[0]
+    start_dir = start.directions[0]
+    face = Face.FRONT
+    path_part = PathPart(start, start.neighbors[start_dir], start_dir, face)
+    q.append(path_part)
+    mark_explored(path_part)
 
     iter = 0
     while len(q) > 0:
